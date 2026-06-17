@@ -1,0 +1,6 @@
+path	classification	note
+pair-01-formatting.js	formatting-only	Whitespace and trailing-comma formatting churn.
+pair-02-reorder.js	function-reordering	Same functions appear in a different order.
+pair-03-logic.js	localized-logic-edit	Comparison operator changes inside a function.
+pair-04-jsx.jsx	localized-logic-edit	Rendered JSX text and class change.
+pair-05-unsupported.txt	unsupported-fallback	Plain text pair should remain line-diff fallback.

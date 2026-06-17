@@ -1,0 +1,6 @@
+path	classification	note
+pair-01-formatting.ts	formatting-only	Whitespace and trailing-comma formatting churn.
+pair-02-reorder.ts	function-reordering	Same functions appear in a different order.
+pair-03-logic.ts	localized-logic-edit	Comparison operator changes inside a function.
+pair-04-object.ts	localized-logic-edit	Returned object property value changes.
+pair-05-unsupported.txt	unsupported-fallback	Plain text pair should remain line-diff fallback.

@@ -1,0 +1,12 @@
+path	classification	note
+pair-01-formatting.rs	formatting-only	Whitespace and brace layout churn only.
+pair-02-reorder.rs	function-reordering	Same functions appear in a different order.
+pair-03-logic.rs	localized-logic-edit	One comparison operator changes inside a function.
+pair-04-regenerated.rs	whole-function-regeneration	Function body is regenerated with a different implementation shape.
+pair-05-formatting.rs	formatting-only	Long expression is reformatted across lines.
+pair-06-reorder.rs	function-reordering	Helper and public function order changes.
+pair-07-logic.rs	localized-logic-edit	Default fallback value changes.
+pair-08-regenerated.rs	whole-function-regeneration	Parser function changes from match to staged branches.
+pair-09-formatting.rs	formatting-only	Struct literal formatting changes only.
+pair-10-logic.rs	localized-logic-edit	Boundary condition changes from inclusive to exclusive.
+pair-11-unsupported.txt	unsupported-fallback	Plain text pair should count as unsupported for normalized Rust diff.

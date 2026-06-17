@@ -1,0 +1,4 @@
+interface:
+  display_name: "Substrate"
+  short_description: "Run Substrate local code-store workflows"
+  default_prompt: "Use $substrate to initialize, ingest, verify, diff, or benchmark this repository."

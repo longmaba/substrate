@@ -1,0 +1,34 @@
+// Generated fixture: agent churn schema
+// Repeated field declarations mimic generated source output.
+pub const SCHEMA_VERSION: &str = "phase0-storage-fixture";
+
+pub const FIELD_00: &str = "changed_rev_20_00";
+pub const FIELD_01: &str = "stable_field_01";
+pub const FIELD_02: &str = "stable_field_02";
+pub const FIELD_03: &str = "stable_field_03";
+pub const FIELD_04: &str = "stable_field_04";
+pub const FIELD_05: &str = "stable_field_05";
+pub const FIELD_06: &str = "stable_field_06";
+pub const FIELD_07: &str = "stable_field_07";
+pub const FIELD_08: &str = "stable_field_08";
+pub const FIELD_09: &str = "stable_field_09";
+pub const FIELD_10: &str = "stable_field_10";
+pub const FIELD_11: &str = "stable_field_11";
+pub const FIELD_12: &str = "stable_field_12";
+pub const FIELD_13: &str = "stable_field_13";
+pub const FIELD_14: &str = "stable_field_14";
+pub const FIELD_15: &str = "stable_field_15";
+pub const FIELD_16: &str = "stable_field_16";
+pub const FIELD_17: &str = "stable_field_17";
+pub const FIELD_18: &str = "stable_field_18";
+pub const FIELD_19: &str = "stable_field_19";
+pub const FIELD_20: &str = "stable_field_20";
+pub const FIELD_21: &str = "stable_field_21";
+pub const FIELD_22: &str = "stable_field_22";
+pub const FIELD_23: &str = "stable_field_23";
+pub const FIELD_24: &str = "stable_field_24";
+pub const FIELD_25: &str = "stable_field_25";
+pub const FIELD_26: &str = "stable_field_26";
+pub const FIELD_27: &str = "stable_field_27";
+pub const FIELD_28: &str = "stable_field_28";
+pub const FIELD_29: &str = "stable_field_29";
