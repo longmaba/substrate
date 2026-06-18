@@ -54,7 +54,7 @@ When updating durable proof status, use numeric booleans:
 | Integration | `gh release view` and `gh release download` inspect and download the published GitHub Release. |
 | E2E | Not required; there is no browser or hosted user flow. |
 | Platform | Installer smoke installs the Windows release asset from downloaded release files and runs `substrate status .`. |
-| Release | `scripts/verify-substrate-github-release.ps1` verifies `v0.1.2` on GitHub. |
+| Release | `scripts/verify-substrate-github-release.ps1` verifies `v0.1.3` on GitHub. |
 
 ## Harness Delta
 
@@ -67,8 +67,8 @@ When updating durable proof status, use numeric booleans:
 - `scripts/bin/harness-cli.exe tool check --name gh` passed and reported
   `gh` present for `deploy-verification`.
 - `scripts/verify-substrate-github-release.ps1` passed against
-  `https://github.com/longmaba/substrate/releases/tag/v0.1.2`, published at
-  `2026-06-18T03:14:26Z`, with `assets_verified: 10`.
+  `https://github.com/longmaba/substrate/releases/tag/v0.1.3`, published at
+  `2026-06-18T16:31:57Z`, with `assets_verified: 10`.
 - The live verifier installed the downloaded Windows asset to a temporary
   directory and `substrate status .` returned `initialized: no` for the current
   repository root.
