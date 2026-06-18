@@ -161,6 +161,23 @@ A repo-local skill for agents is available at `skills/substrate/SKILL.md`.
 Agents can use it when asked to initialize, ingest, verify, diff, benchmark, or
 onboard an existing repository with Substrate.
 
+## TODO
+
+- Honor `.gitignore` and skip common local-only directories such as `.git`,
+  `node_modules`, `target`, `dist`, and cache folders during ingest.
+- Add a parser registry so new languages can be added without expanding the
+  central diff dispatch each time.
+- Add more parser-backed languages beyond Rust, TypeScript, JavaScript, and JSX.
+- Add larger benchmarks against real agent-churn repositories and compare
+  storage, transfer, and review-noise metrics against Git-style baselines.
+- Add a packaged binary release path so users do not need to run through Cargo.
+- Add Git-compatible import/export workflows before attempting remote or
+  protocol-level GitHub integration.
+- Add query-first inspection commands for symbols, verified states, and state
+  provenance.
+- Add retention and compaction policy for rejected or superseded candidate
+  states.
+
 ## Product Docs
 
 - `docs/product/overview.md` explains the product direction.
