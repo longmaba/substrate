@@ -32,6 +32,7 @@ tests or validation evidence exist.
 | US-010 | Ignore-aware ingest and parser registry complete the first two public README TODO items. | yes | yes | no | yes | implemented | `docs/stories/US-010-ignore-aware-ingest-parser-registry.md` |
 | US-011 | Packaged binary releases and repo-local installers make Substrate installable without Cargo on supported platforms. | yes | yes | no | yes | implemented | `docs/stories/US-011-substrate-release-automation/`; cargo fmt --check; cargo test; cargo build; release packaging script; local installer smoke; harness-cli story verify-all |
 | US-012 | Python and C# tree-sitter diff parsers add parser-backed changed-node counts for `.py` and `.cs` files. | yes | yes | no | yes | implemented | `docs/stories/US-012-python-csharp-tree-sitter-diff-parsers.md`; cargo fmt --check; cargo test; cargo build; Python and C# fixture diff commands; harness-cli story verify-all |
+| US-013 | Live release verification proves the published GitHub Release asset and checksum contract. | yes | yes | no | yes | implemented | `docs/stories/US-013-live-release-verification.md`; `scripts/verify-substrate-github-release.ps1`; `harness-cli story verify US-013`; `harness-cli story verify-all` |
 
 ## Evidence Rules
 

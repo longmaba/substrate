@@ -52,4 +52,4 @@ gh release download <tag> --pattern "substrate-*" --dir <temp-dir>
 - `git diff --check`: passed.
 - `bash -n scripts/build-substrate-release.sh scripts/install-substrate.sh`: passed.
 - No `security-scan` provider is registered in the Harness tool registry; skipped cleanly.
-- Not yet proven: live GitHub release creation/upload on a pushed `v*` tag.
+- Live GitHub release asset verification is covered by `docs/stories/US-013-live-release-verification.md`.
