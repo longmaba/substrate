@@ -29,6 +29,28 @@ Prerequisites:
 - Rust toolchain with Cargo.
 - PowerShell on Windows, or an equivalent shell on macOS/Linux.
 
+Install the latest packaged binary into the current repository:
+
+```bash
+curl -fsSL "https://raw.githubusercontent.com/longmaba/substrate/main/scripts/install-substrate.sh" | bash
+```
+
+```powershell
+& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/longmaba/substrate/main/scripts/install-substrate.ps1")))
+```
+
+The installer verifies the release checksum and writes the binary to
+`scripts/bin/substrate` on macOS/Linux or `scripts/bin/substrate.exe` on
+Windows. Run it from the repository where you want the repo-local tool:
+
+```powershell
+.\scripts\bin\substrate.exe status .
+```
+
+```bash
+./scripts/bin/substrate status .
+```
+
 Build from this repository:
 
 ```powershell
@@ -166,7 +188,6 @@ onboard an existing repository with Substrate.
 - Add more parser-backed languages beyond Rust, TypeScript, JavaScript, and JSX.
 - Add larger benchmarks against real agent-churn repositories and compare
   storage, transfer, and review-noise metrics against Git-style baselines.
-- Add a packaged binary release path so users do not need to run through Cargo.
 - Add Git-compatible import/export workflows before attempting remote or
   protocol-level GitHub integration.
 - Add query-first inspection commands for symbols, verified states, and state
@@ -176,6 +197,8 @@ onboard an existing repository with Substrate.
 
 ## Recently Completed
 
+- Packaged binary releases and repo-local installers are available for Windows
+  x64, macOS x64/arm64, and Linux x64/arm64.
 - Ingest honors root `.gitignore` patterns and skips common local-only
   directories.
 - Diff language support now goes through a parser registry table for supported

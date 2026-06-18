@@ -141,6 +141,73 @@ that tag, or set `HARNESS_CLI_BASE_URL` to point at an alternate artifact
 directory, such as a local `file:///.../dist` directory created by
 `scripts/build-harness-cli-release.sh`.
 
+## Substrate CLI Installer
+
+Substrate's one-line installers download a released Substrate binary, verify
+the `.sha256` checksum, and install it into the current repository:
+
+```bash
+curl -fsSL "https://raw.githubusercontent.com/longmaba/substrate/main/scripts/install-substrate.sh" | bash
+```
+
+```powershell
+& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/longmaba/substrate/main/scripts/install-substrate.ps1")))
+```
+
+Installed command paths are repo-local:
+
+- `scripts/bin/substrate` on macOS/Linux
+- `scripts/bin/substrate.exe` on Windows
+
+Set `SUBSTRATE_RELEASE_TAG` to install a specific tag, or set
+`SUBSTRATE_BASE_URL` to an alternate artifact directory for local smoke tests.
+
+## Substrate Release Packaging
+
+Build a current-platform Substrate release artifact:
+
+```bash
+scripts/build-substrate-release.sh
+```
+
+```powershell
+.\scripts\build-substrate-release.ps1
+```
+
+The scripts write `dist/substrate-<platform>` plus `.sha256` checksums. Windows
+artifacts include the `.exe` suffix. Supported labels are:
+
+- `macos-arm64`
+- `macos-x64`
+- `linux-x64`
+- `linux-arm64`
+- `windows-x64`
+
+For cross-compilation, pass a Cargo target triple:
+
+```bash
+scripts/build-substrate-release.sh --target x86_64-unknown-linux-gnu
+```
+
+```powershell
+.\scripts\build-substrate-release.ps1 -Target x86_64-pc-windows-msvc
+```
+
+GitHub releases are produced by `.github/workflows/substrate-release.yml`.
+Pushing a tag matching `v*` runs formatting, tests, and build checks, builds all
+supported platform artifacts, then creates or updates the matching GitHub
+Release using the stable asset names expected by the installers.
+
+Run the local release verification bundle with:
+
+```powershell
+.\scripts\verify-substrate-release.ps1
+```
+
+It runs formatting, tests, build, current-platform packaging, checksum-verified
+install from local `dist/`, and a smoke `substrate status .` call against the
+installed binary.
+
 ## Schema Migrations
 
 Migration files live under `scripts/schema/` and are named `NNN-description.sql`

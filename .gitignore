@@ -11,6 +11,10 @@ dist/
 scripts/bin/harness-cli
 scripts/bin/harness-cli.exe
 
+# Downloaded Substrate CLI binary for repo-local installs.
+scripts/bin/substrate
+scripts/bin/substrate.exe
+
 # bv (beads viewer) local config and caches
 .bv/
 
