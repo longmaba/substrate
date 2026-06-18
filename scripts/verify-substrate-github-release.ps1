@@ -1,6 +1,6 @@
 param(
     [string]$Repository = "longmaba/substrate",
-    [string]$Tag = "v0.1.2",
+    [string]$Tag = "v0.1.3",
     [string]$DownloadDir = "",
     [string]$InstallSmokeDir = "",
     [switch]$KeepDownloads
