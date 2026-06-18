@@ -1,0 +1,6 @@
+path	classification	note
+pair-01-formatting.py	formatting-only	Function signature and body formatting changes without structural content changes.
+pair-02-reorder.py	function-reordering	Function order changes without structural content changes.
+pair-03-logic.py	localized-logic-edit	Comparison operator changes inside one function.
+pair-04-object.py	localized-logic-edit	Class method output changes.
+pair-05-unsupported.txt	unsupported-fallback	Plain text pair should count as unsupported for normalized Python diff.

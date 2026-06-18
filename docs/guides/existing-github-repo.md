@@ -85,6 +85,8 @@ Supported parser-backed diff paths:
 | `.rs` | normalized Rust function-block comparison |
 | `.ts`, `.tsx` | tree-sitter TypeScript named-node fingerprints |
 | `.js`, `.jsx` | tree-sitter JavaScript named-node fingerprints |
+| `.py` | tree-sitter Python named-node fingerprints |
+| `.cs` | tree-sitter C# named-node fingerprints |
 | anything else | text-diff fallback accounting |
 
 The output keeps `semantic_equivalence_claimed: no`. Treat normalized node

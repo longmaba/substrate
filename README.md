@@ -5,9 +5,9 @@ code states with verification metadata, projects those states back to plain
 files, and compares source trees with structural diff support where a parser is
 available.
 
-Current parser-backed diff support covers Rust, TypeScript, JavaScript, and JSX.
-Unsupported files still get text-diff fallback accounting, and Substrate does
-not claim semantic equivalence.
+Current parser-backed diff support covers Rust, TypeScript, JavaScript, JSX,
+Python, and C#. Unsupported files still get text-diff fallback accounting, and
+Substrate does not claim semantic equivalence.
 
 ## Why It Exists
 
@@ -135,6 +135,8 @@ Supported parser-backed inputs:
 | Rust | `.rs` | normalized function-block placeholder |
 | TypeScript | `.ts`, `.tsx` | tree-sitter named syntax-node fingerprints |
 | JavaScript | `.js`, `.jsx` | tree-sitter named syntax-node fingerprints |
+| Python | `.py` | tree-sitter named syntax-node fingerprints |
+| C# | `.cs` | tree-sitter named syntax-node fingerprints |
 
 ## Benchmarks
 
@@ -185,7 +187,8 @@ onboard an existing repository with Substrate.
 
 ## TODO
 
-- Add more parser-backed languages beyond Rust, TypeScript, JavaScript, and JSX.
+- Add more parser-backed languages beyond Rust, TypeScript, JavaScript, JSX,
+  Python, and C#.
 - Add larger benchmarks against real agent-churn repositories and compare
   storage, transfer, and review-noise metrics against Git-style baselines.
 - Add Git-compatible import/export workflows before attempting remote or
@@ -199,6 +202,7 @@ onboard an existing repository with Substrate.
 
 - Packaged binary releases and repo-local installers are available for Windows
   x64, macOS x64/arm64, and Linux x64/arm64.
+- Parser-backed diff support now includes Python and C# through tree-sitter.
 - Ingest honors root `.gitignore` patterns and skips common local-only
   directories.
 - Diff language support now goes through a parser registry table for supported

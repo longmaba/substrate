@@ -1077,6 +1077,8 @@ struct DiffReport {
     rust_pair_count: usize,
     typescript_pair_count: usize,
     javascript_pair_count: usize,
+    python_pair_count: usize,
+    csharp_pair_count: usize,
     line_diff_changed_lines: usize,
     normalized_changed_node_count: usize,
     unsupported_file_fallback_count: usize,
@@ -1104,6 +1106,8 @@ enum DiffLanguage {
     Rust,
     TypeScript,
     JavaScript,
+    Python,
+    CSharp,
 }
 
 #[derive(Clone, Copy)]
@@ -1129,6 +1133,16 @@ const DIFF_LANGUAGE_REGISTRY: &[DiffLanguageSpec] = &[
         extensions: &[".js", ".jsx"],
         changed_node_count: normalized_javascript_changed_node_count,
     },
+    DiffLanguageSpec {
+        language: DiffLanguage::Python,
+        extensions: &[".py"],
+        changed_node_count: normalized_python_changed_node_count,
+    },
+    DiffLanguageSpec {
+        language: DiffLanguage::CSharp,
+        extensions: &[".cs"],
+        changed_node_count: normalized_csharp_changed_node_count,
+    },
 ];
 
 fn diff_paths(left: &Path, right: &Path) -> Result<DiffReport, String> {
@@ -1145,6 +1159,8 @@ fn diff_paths(left: &Path, right: &Path) -> Result<DiffReport, String> {
     let mut rust_pair_count = 0usize;
     let mut typescript_pair_count = 0usize;
     let mut javascript_pair_count = 0usize;
+    let mut python_pair_count = 0usize;
+    let mut csharp_pair_count = 0usize;
     let mut line_diff_changed_lines = 0usize;
     let mut normalized_changed_node_count = 0usize;
     let mut unsupported_file_fallback_count = 0usize;
@@ -1166,6 +1182,8 @@ fn diff_paths(left: &Path, right: &Path) -> Result<DiffReport, String> {
                     DiffLanguage::Rust => rust_pair_count += 1,
                     DiffLanguage::TypeScript => typescript_pair_count += 1,
                     DiffLanguage::JavaScript => javascript_pair_count += 1,
+                    DiffLanguage::Python => python_pair_count += 1,
+                    DiffLanguage::CSharp => csharp_pair_count += 1,
                 }
                 ((spec.changed_node_count)(&left_bytes, &right_bytes)?, false)
             }
@@ -1194,6 +1212,8 @@ fn diff_paths(left: &Path, right: &Path) -> Result<DiffReport, String> {
         rust_pair_count,
         typescript_pair_count,
         javascript_pair_count,
+        python_pair_count,
+        csharp_pair_count,
         line_diff_changed_lines,
         normalized_changed_node_count,
         unsupported_file_fallback_count,
@@ -1346,6 +1366,18 @@ fn normalized_javascript_changed_node_count(left: &[u8], right: &[u8]) -> Result
     changed_fingerprint_count(&left, &right)
 }
 
+fn normalized_python_changed_node_count(left: &[u8], right: &[u8]) -> Result<usize, String> {
+    let left = parser_node_fingerprints(left, tree_sitter_python::LANGUAGE.into(), "Python")?;
+    let right = parser_node_fingerprints(right, tree_sitter_python::LANGUAGE.into(), "Python")?;
+    changed_fingerprint_count(&left, &right)
+}
+
+fn normalized_csharp_changed_node_count(left: &[u8], right: &[u8]) -> Result<usize, String> {
+    let left = parser_node_fingerprints(left, tree_sitter_c_sharp::LANGUAGE.into(), "C#")?;
+    let right = parser_node_fingerprints(right, tree_sitter_c_sharp::LANGUAGE.into(), "C#")?;
+    changed_fingerprint_count(&left, &right)
+}
+
 fn changed_fingerprint_count(
     left: &HashMap<String, usize>,
     right: &HashMap<String, usize>,
@@ -1387,7 +1419,7 @@ fn collect_parser_node_fingerprints(
     source: &[u8],
     fingerprints: &mut HashMap<String, usize>,
 ) {
-    if node.is_named() && node.kind() != "program" {
+    if node.is_named() && node.parent().is_some() {
         let text = node.utf8_text(source).unwrap_or("");
         let normalized = normalize_parser_text(text);
         let fingerprint = format!("{}:{}", node.kind(), normalized);
@@ -1493,13 +1525,15 @@ fn normalize_rust_block(raw: &str) -> String {
 impl DiffReport {
     fn to_text(&self) -> String {
         let mut output = format!(
-            "diff_report: yes\nleft: {}\nright: {}\npair_count: {}\nrust_pair_count: {}\ntypescript_pair_count: {}\njavascript_pair_count: {}\nline_diff_changed_lines: {}\nnormalized_changed_node_count: {}\nunsupported_file_fallback_count: {}\nsemantic_equivalence_claimed: no\npairs:\n",
+            "diff_report: yes\nleft: {}\nright: {}\npair_count: {}\nrust_pair_count: {}\ntypescript_pair_count: {}\njavascript_pair_count: {}\npython_pair_count: {}\ncsharp_pair_count: {}\nline_diff_changed_lines: {}\nnormalized_changed_node_count: {}\nunsupported_file_fallback_count: {}\nsemantic_equivalence_claimed: no\npairs:\n",
             self.left.display(),
             self.right.display(),
             self.pair_count,
             self.rust_pair_count,
             self.typescript_pair_count,
             self.javascript_pair_count,
+            self.python_pair_count,
+            self.csharp_pair_count,
             self.line_diff_changed_lines,
             self.normalized_changed_node_count,
             self.unsupported_file_fallback_count,
@@ -2267,6 +2301,8 @@ mod tests {
         assert_eq!(report.rust_pair_count, 1);
         assert_eq!(report.typescript_pair_count, 0);
         assert_eq!(report.javascript_pair_count, 0);
+        assert_eq!(report.python_pair_count, 0);
+        assert_eq!(report.csharp_pair_count, 0);
         assert_eq!(report.unsupported_file_fallback_count, 1);
         assert_eq!(report.normalized_changed_node_count, 0);
         assert!(report
@@ -2287,6 +2323,14 @@ mod tests {
         assert_eq!(
             diff_language_for_path("src/widget.jsx").map(|spec| spec.language),
             Some(DiffLanguage::JavaScript)
+        );
+        assert_eq!(
+            diff_language_for_path("src/tool.py").map(|spec| spec.language),
+            Some(DiffLanguage::Python)
+        );
+        assert_eq!(
+            diff_language_for_path("src/Widget.cs").map(|spec| spec.language),
+            Some(DiffLanguage::CSharp)
         );
         assert!(diff_language_for_path("README.md").is_none());
     }
@@ -2337,6 +2381,8 @@ mod tests {
         assert_eq!(report.rust_pair_count, 0);
         assert_eq!(report.typescript_pair_count, 4);
         assert_eq!(report.javascript_pair_count, 0);
+        assert_eq!(report.python_pair_count, 0);
+        assert_eq!(report.csharp_pair_count, 0);
         assert_eq!(report.unsupported_file_fallback_count, 1);
         assert!(report.line_diff_changed_lines > 0);
         assert!(report.normalized_changed_node_count > 0);
@@ -2380,12 +2426,106 @@ mod tests {
         assert_eq!(report.rust_pair_count, 0);
         assert_eq!(report.typescript_pair_count, 0);
         assert_eq!(report.javascript_pair_count, 4);
+        assert_eq!(report.python_pair_count, 0);
+        assert_eq!(report.csharp_pair_count, 0);
         assert_eq!(report.unsupported_file_fallback_count, 1);
         assert!(report.line_diff_changed_lines > 0);
         assert!(report.normalized_changed_node_count > 0);
         assert!(output.contains("javascript_pair_count: 4"));
         assert!(output.contains("pair-01-formatting.js\tformatting-only"));
         assert!(output.contains("pair-04-jsx.jsx\tlocalized-logic-edit"));
+        assert!(output.contains("pair-05-unsupported.txt\tunsupported-fallback"));
+    }
+
+    #[test]
+    fn python_tree_sitter_diff_ignores_formatting_and_counts_logic() {
+        let formatted_left = b"def label(identifier, name):\n    return f'{identifier}:{name}'\n";
+        let formatted_right =
+            b"def label(\n    identifier,\n    name,\n):\n    return f'{identifier}:{name}'\n";
+        assert!(changed_line_count(formatted_left, formatted_right) > 0);
+        assert_eq!(
+            normalized_python_changed_node_count(formatted_left, formatted_right).unwrap(),
+            0
+        );
+
+        let logic_left = b"def ready(count):\n    return count >= 3\n";
+        let logic_right = b"def ready(count):\n    return count > 3\n";
+        assert!(normalized_python_changed_node_count(logic_left, logic_right).unwrap() > 0);
+
+        let reorder_left = b"def alpha():\n    return 1\n\n\ndef beta():\n    return 2\n";
+        let reorder_right = b"def beta():\n    return 2\n\n\ndef alpha():\n    return 1\n";
+        assert_eq!(
+            normalized_python_changed_node_count(reorder_left, reorder_right).unwrap(),
+            0
+        );
+    }
+
+    #[test]
+    fn committed_python_fixture_produces_parser_backed_report() {
+        let report = diff_paths(
+            Path::new("fixtures/diff-python-pairs/before"),
+            Path::new("fixtures/diff-python-pairs/after"),
+        )
+        .expect("committed Python fixture should report");
+        let output = report.to_text();
+
+        assert_eq!(report.pair_count, 5);
+        assert_eq!(report.rust_pair_count, 0);
+        assert_eq!(report.typescript_pair_count, 0);
+        assert_eq!(report.javascript_pair_count, 0);
+        assert_eq!(report.python_pair_count, 4);
+        assert_eq!(report.csharp_pair_count, 0);
+        assert_eq!(report.unsupported_file_fallback_count, 1);
+        assert!(report.line_diff_changed_lines > 0);
+        assert!(report.normalized_changed_node_count > 0);
+        assert!(output.contains("python_pair_count: 4"));
+        assert!(output.contains("pair-01-formatting.py\tformatting-only"));
+        assert!(output.contains("pair-05-unsupported.txt\tunsupported-fallback"));
+    }
+
+    #[test]
+    fn csharp_tree_sitter_diff_ignores_formatting_and_counts_logic() {
+        let formatted_left =
+            b"public static string Label(int id, string name) { return $\"{id}:{name}\"; }\n";
+        let formatted_right = b"public static string Label(\n    int id,\n    string name\n)\n{\n    return $\"{id}:{name}\";\n}\n";
+        assert!(changed_line_count(formatted_left, formatted_right) > 0);
+        assert_eq!(
+            normalized_csharp_changed_node_count(formatted_left, formatted_right).unwrap(),
+            0
+        );
+
+        let logic_left = b"public static bool Ready(int count) { return count >= 3; }\n";
+        let logic_right = b"public static bool Ready(int count) { return count > 3; }\n";
+        assert!(normalized_csharp_changed_node_count(logic_left, logic_right).unwrap() > 0);
+
+        let reorder_left = b"public class AlphaValue { public int Read() { return 1; } }\npublic class BetaValue { public int Read() { return 2; } }\n";
+        let reorder_right = b"public class BetaValue { public int Read() { return 2; } }\npublic class AlphaValue { public int Read() { return 1; } }\n";
+        assert_eq!(
+            normalized_csharp_changed_node_count(reorder_left, reorder_right).unwrap(),
+            0
+        );
+    }
+
+    #[test]
+    fn committed_csharp_fixture_produces_parser_backed_report() {
+        let report = diff_paths(
+            Path::new("fixtures/diff-csharp-pairs/before"),
+            Path::new("fixtures/diff-csharp-pairs/after"),
+        )
+        .expect("committed C# fixture should report");
+        let output = report.to_text();
+
+        assert_eq!(report.pair_count, 5);
+        assert_eq!(report.rust_pair_count, 0);
+        assert_eq!(report.typescript_pair_count, 0);
+        assert_eq!(report.javascript_pair_count, 0);
+        assert_eq!(report.python_pair_count, 0);
+        assert_eq!(report.csharp_pair_count, 4);
+        assert_eq!(report.unsupported_file_fallback_count, 1);
+        assert!(report.line_diff_changed_lines > 0);
+        assert!(report.normalized_changed_node_count > 0);
+        assert!(output.contains("csharp_pair_count: 4"));
+        assert!(output.contains("pair-01-formatting.cs\tformatting-only"));
         assert!(output.contains("pair-05-unsupported.txt\tunsupported-fallback"));
     }
 

@@ -1,0 +1,6 @@
+path	classification	note
+pair-01-formatting.cs	formatting-only	Method signature and body formatting changes without structural content changes.
+pair-02-reorder.cs	function-reordering	Method order changes without structural content changes.
+pair-03-logic.cs	localized-logic-edit	Comparison operator changes inside one method.
+pair-04-object.cs	localized-logic-edit	Rendered text and class name change.
+pair-05-unsupported.txt	unsupported-fallback	Plain text pair should count as unsupported for normalized C# diff.
