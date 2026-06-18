@@ -20,9 +20,32 @@ function Get-PlatformLabelForTarget {
     }
 }
 
+function Get-HostArchitecture {
+    $runtimeInfo = [System.Runtime.InteropServices.RuntimeInformation]
+    $osArchitecture = $runtimeInfo.GetProperty("OSArchitecture")
+    if ($null -ne $osArchitecture) {
+        return $osArchitecture.GetValue($null).ToString()
+    }
+
+    $machineArchitecture = $env:PROCESSOR_ARCHITEW6432
+    if (!$machineArchitecture) {
+        $machineArchitecture = $env:PROCESSOR_ARCHITECTURE
+    }
+
+    switch ($machineArchitecture) {
+        "AMD64" { return "X64" }
+        "ARM64" { return "Arm64" }
+        "x86" { return "X86" }
+        default {
+            if ([System.Environment]::Is64BitOperatingSystem) { return "X64" }
+            return $machineArchitecture
+        }
+    }
+}
+
 function Get-PlatformLabelForHost {
     $os = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription
-    $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
+    $arch = Get-HostArchitecture
 
     if ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)) {
         if ($arch -eq "X64") { return "windows-x64" }
