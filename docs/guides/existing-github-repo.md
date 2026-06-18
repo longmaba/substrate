@@ -14,18 +14,17 @@ git clone https://github.com/<owner>/<repo>.git
 cd <repo>
 ```
 
-For the cleanest Phase 0 results, run Substrate on a source export or temporary
-working-tree copy that excludes generated dependencies and build output:
+For a disposable trial, a source export or temporary working-tree copy is still
+useful:
 
 ```powershell
 git archive --format=tar HEAD | tar -xf - -C ..\repo-substrate-copy
 cd ..\repo-substrate-copy
 ```
 
-Reason: Phase 0 ingestion skips `.substrate`, but it does not yet honor
-`.gitignore`. Avoid including `.git`, `node_modules`, `target`, `dist`, build
-artifacts, cache folders, and vendor directories unless you intentionally want
-them in the local state.
+Ingestion now skips `.substrate`, honors root `.gitignore` patterns, and skips
+common local-only directories such as `.git`, `node_modules`, `target`, `dist`,
+`build`, `coverage`, `.cache`, `.next`, and `.turbo`.
 
 ## 2. Initialize Substrate
 
@@ -107,7 +106,9 @@ When an agent is working in an existing repo:
 
 - No GitHub API integration.
 - No Git protocol emulation.
-- No `.gitignore` support yet.
+- `.gitignore` support is intentionally basic and root-scoped; advanced Git
+  ignore semantics such as nested ignore files and full glob parity are not yet
+  implemented.
 - No remote push, pull, fetch, branch, or PR commands.
 - No semantic-equivalence proof, even when normalized changed nodes are zero.
 

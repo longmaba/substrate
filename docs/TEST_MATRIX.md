@@ -29,6 +29,7 @@ tests or validation evidence exist.
 | US-007 | TypeScript tree-sitter diff parser adds real parser-backed changed-node counts for TypeScript files. | yes | yes | no | yes | implemented | `docs/stories/US-007-typescript-tree-sitter-diff-parser.md` |
 | US-008 | JavaScript tree-sitter diff parser adds real parser-backed changed-node counts for JavaScript and JSX files. | yes | yes | no | yes | implemented | `docs/stories/US-008-javascript-tree-sitter-diff-parser.md` |
 | US-009 | User onboarding docs, repo-local agent skill, and measured benchmark guide make the Phase 0 CLI usable by humans and agents. | no | yes | no | yes | implemented | `docs/stories/US-009-user-onboarding-skill-benchmarks.md` |
+| US-010 | Ignore-aware ingest and parser registry complete the first two public README TODO items. | yes | yes | no | yes | implemented | `docs/stories/US-010-ignore-aware-ingest-parser-registry.md` |
 
 ## Evidence Rules
 

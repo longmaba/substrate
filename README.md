@@ -151,9 +151,9 @@ Git protocol yet. Use it beside Git: clone or export a repository, initialize a
 local `.substrate` store, ingest candidate states, verify them, and use `diff`
 to compare local directories or worktrees.
 
-Important current caveat: ingestion skips `.substrate`, but it does not yet
-honor `.gitignore`. For clean measurements, run Substrate on a source export or
-working-tree copy that excludes `.git`, dependency folders, and build outputs.
+Ingestion skips `.substrate`, honors root `.gitignore` patterns, and skips common
+local-only directories such as `.git`, `node_modules`, `target`, `dist`, build
+outputs, and cache folders.
 
 ## Agent Skill
 
@@ -163,10 +163,6 @@ onboard an existing repository with Substrate.
 
 ## TODO
 
-- Honor `.gitignore` and skip common local-only directories such as `.git`,
-  `node_modules`, `target`, `dist`, and cache folders during ingest.
-- Add a parser registry so new languages can be added without expanding the
-  central diff dispatch each time.
 - Add more parser-backed languages beyond Rust, TypeScript, JavaScript, and JSX.
 - Add larger benchmarks against real agent-churn repositories and compare
   storage, transfer, and review-noise metrics against Git-style baselines.
@@ -177,6 +173,13 @@ onboard an existing repository with Substrate.
   provenance.
 - Add retention and compaction policy for rejected or superseded candidate
   states.
+
+## Recently Completed
+
+- Ingest honors root `.gitignore` patterns and skips common local-only
+  directories.
+- Diff language support now goes through a parser registry table for supported
+  extensions and parser functions.
 
 ## Product Docs
 

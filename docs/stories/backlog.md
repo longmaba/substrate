@@ -29,3 +29,4 @@ the work is selected or when a product decision needs a durable place to land.
 | US-007 | TypeScript tree-sitter diff parser | implemented |
 | US-008 | JavaScript tree-sitter diff parser | implemented |
 | US-009 | User onboarding, agent skill, and benchmarks | implemented |
+| US-010 | Ignore-aware ingest and parser registry | implemented |

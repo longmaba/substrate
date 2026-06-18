@@ -27,7 +27,7 @@ skill, and cite measured benchmark evidence without overclaiming.
 - README includes installation, command usage, quickstart, structural diff,
   benchmark summary, existing-repo pointer, and agent-skill pointer.
 - Existing GitHub repo guide explains the local-only Phase 0 workflow and
-  current `.gitignore` caveat.
+  current ignore-rule behavior.
 - Agent skill exists as a reusable `SKILL.md` with valid frontmatter and a clear
   workflow for initialize, ingest, project, verify, diff, and benchmark tasks.
 - Benchmark doc cites measured fixture results and labels token savings as an

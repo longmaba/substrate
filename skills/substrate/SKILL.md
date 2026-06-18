@@ -18,7 +18,7 @@ churn.
 - When controlling Substrate from another repository, use `cargo run --manifest-path <substrate>/Cargo.toml -- <command>`.
 - Treat Phase 0 as local-only: no GitHub API, no Git protocol emulation, no remote push/pull/fetch.
 - Do not claim semantic equivalence. The diff report intentionally says `semantic_equivalence_claimed: no`.
-- Before using an existing repository, warn that ingestion skips `.substrate` but does not yet honor `.gitignore`.
+- Before using an existing repository, note that ingestion honors root `.gitignore` patterns and skips common local-only directories, but does not yet implement full Git ignore parity.
 
 ## Command Map
 

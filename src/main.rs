@@ -9,6 +9,18 @@ const STORE_DIR: &str = ".substrate";
 const STORE_METADATA: &str = "store.toml";
 const STORE_VERSION: u32 = 1;
 const BENCH_CHUNK_SIZE: usize = 128;
+const DEFAULT_IGNORED_DIRS: &[&str] = &[
+    STORE_DIR,
+    ".git",
+    "node_modules",
+    "target",
+    "dist",
+    "build",
+    "coverage",
+    ".cache",
+    ".next",
+    ".turbo",
+];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct StoreMetadata {
@@ -583,7 +595,8 @@ fn project_state(root: &Path, state_id: &str, out: &Path) -> Result<ProjectRepor
 
 fn collect_working_tree_files(root: &Path) -> Result<Vec<PathBuf>, String> {
     let mut files = Vec::new();
-    collect_working_tree_files_into(root, root, &mut files)?;
+    let ignore_rules = IgnoreRules::load(root);
+    collect_working_tree_files_into(root, root, &ignore_rules, &mut files)?;
     files.sort();
     Ok(files)
 }
@@ -591,6 +604,7 @@ fn collect_working_tree_files(root: &Path) -> Result<Vec<PathBuf>, String> {
 fn collect_working_tree_files_into(
     root: &Path,
     current: &Path,
+    ignore_rules: &IgnoreRules,
     files: &mut Vec<PathBuf>,
 ) -> Result<(), String> {
     for entry in fs::read_dir(current)
@@ -598,16 +612,153 @@ fn collect_working_tree_files_into(
     {
         let entry = entry.map_err(|error| format!("failed to read directory entry: {error}"))?;
         let path = entry.path();
-        if path == store_dir(root) {
-            continue;
-        }
         if path.is_dir() {
-            collect_working_tree_files_into(root, &path, files)?;
+            if should_ignore_working_tree_path(root, &path, true, ignore_rules)? {
+                continue;
+            }
+            collect_working_tree_files_into(root, &path, ignore_rules, files)?;
         } else if path.is_file() {
+            if should_ignore_working_tree_path(root, &path, false, ignore_rules)? {
+                continue;
+            }
             files.push(path);
         }
     }
     Ok(())
+}
+
+fn should_ignore_working_tree_path(
+    root: &Path,
+    path: &Path,
+    is_dir: bool,
+    ignore_rules: &IgnoreRules,
+) -> Result<bool, String> {
+    let relative = relative_manifest_path(root, path)?;
+    if relative
+        .split('/')
+        .any(|part| DEFAULT_IGNORED_DIRS.contains(&part))
+    {
+        return Ok(true);
+    }
+    Ok(ignore_rules.is_ignored(&relative, is_dir))
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct IgnoreRules {
+    patterns: Vec<IgnorePattern>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct IgnorePattern {
+    pattern: String,
+    negated: bool,
+    directory_only: bool,
+    anchored: bool,
+    has_slash: bool,
+}
+
+impl IgnoreRules {
+    fn load(root: &Path) -> Self {
+        let raw = fs::read_to_string(root.join(".gitignore")).unwrap_or_default();
+        Self::parse(&raw)
+    }
+
+    fn parse(raw: &str) -> Self {
+        let patterns = raw.lines().filter_map(IgnorePattern::parse).collect();
+        Self { patterns }
+    }
+
+    fn is_ignored(&self, relative: &str, is_dir: bool) -> bool {
+        let mut ignored = false;
+        for pattern in &self.patterns {
+            if pattern.matches(relative, is_dir) {
+                ignored = !pattern.negated;
+            }
+        }
+        ignored
+    }
+}
+
+impl IgnorePattern {
+    fn parse(line: &str) -> Option<Self> {
+        let mut pattern = line.trim();
+        if pattern.is_empty() || pattern.starts_with('#') {
+            return None;
+        }
+
+        let negated = pattern.starts_with('!');
+        if negated {
+            pattern = pattern[1..].trim_start();
+        }
+        if pattern.is_empty() {
+            return None;
+        }
+
+        let anchored = pattern.starts_with('/');
+        if anchored {
+            pattern = &pattern[1..];
+        }
+        let directory_only = pattern.ends_with('/');
+        if directory_only {
+            pattern = pattern.trim_end_matches('/');
+        }
+        if pattern.is_empty() {
+            return None;
+        }
+
+        let pattern = pattern.replace('\\', "/");
+        let has_slash = pattern.contains('/');
+        Some(Self {
+            pattern,
+            negated,
+            directory_only,
+            anchored,
+            has_slash,
+        })
+    }
+
+    fn matches(&self, relative: &str, is_dir: bool) -> bool {
+        if self.directory_only && !is_dir {
+            return false;
+        }
+        if self.has_slash || self.anchored {
+            return glob_match(&self.pattern, relative);
+        }
+
+        relative
+            .split('/')
+            .any(|part| glob_match(&self.pattern, part))
+    }
+}
+
+fn glob_match(pattern: &str, text: &str) -> bool {
+    let pattern = pattern.as_bytes();
+    let text = text.as_bytes();
+    let (mut p, mut t) = (0usize, 0usize);
+    let mut star = None;
+    let mut star_text = 0usize;
+
+    while t < text.len() {
+        if p < pattern.len() && (pattern[p] == b'?' || pattern[p] == text[t]) {
+            p += 1;
+            t += 1;
+        } else if p < pattern.len() && pattern[p] == b'*' {
+            star = Some(p);
+            p += 1;
+            star_text = t;
+        } else if let Some(star_index) = star {
+            p = star_index + 1;
+            star_text += 1;
+            t = star_text;
+        } else {
+            return false;
+        }
+    }
+
+    while p < pattern.len() && pattern[p] == b'*' {
+        p += 1;
+    }
+    p == pattern.len()
 }
 
 fn is_supported_text(bytes: &[u8]) -> bool {
@@ -948,6 +1099,38 @@ struct DiffNote {
     note: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DiffLanguage {
+    Rust,
+    TypeScript,
+    JavaScript,
+}
+
+#[derive(Clone, Copy)]
+struct DiffLanguageSpec {
+    language: DiffLanguage,
+    extensions: &'static [&'static str],
+    changed_node_count: fn(&[u8], &[u8]) -> Result<usize, String>,
+}
+
+const DIFF_LANGUAGE_REGISTRY: &[DiffLanguageSpec] = &[
+    DiffLanguageSpec {
+        language: DiffLanguage::Rust,
+        extensions: &[".rs"],
+        changed_node_count: normalized_rust_changed_node_count_result,
+    },
+    DiffLanguageSpec {
+        language: DiffLanguage::TypeScript,
+        extensions: &[".ts", ".tsx"],
+        changed_node_count: normalized_typescript_changed_node_count,
+    },
+    DiffLanguageSpec {
+        language: DiffLanguage::JavaScript,
+        extensions: &[".js", ".jsx"],
+        changed_node_count: normalized_javascript_changed_node_count,
+    },
+];
+
 fn diff_paths(left: &Path, right: &Path) -> Result<DiffReport, String> {
     let left = left
         .canonicalize()
@@ -977,27 +1160,19 @@ fn diff_paths(left: &Path, right: &Path) -> Result<DiffReport, String> {
             note: String::new(),
         });
 
-        let (normalized_changes, unsupported) = if pair.relative.ends_with(".rs") {
-            rust_pair_count += 1;
-            (
-                normalized_rust_changed_node_count(&left_bytes, &right_bytes),
-                false,
-            )
-        } else if is_typescript_path(&pair.relative) {
-            typescript_pair_count += 1;
-            (
-                normalized_typescript_changed_node_count(&left_bytes, &right_bytes)?,
-                false,
-            )
-        } else if is_javascript_path(&pair.relative) {
-            javascript_pair_count += 1;
-            (
-                normalized_javascript_changed_node_count(&left_bytes, &right_bytes)?,
-                false,
-            )
-        } else {
-            unsupported_file_fallback_count += 1;
-            (0, true)
+        let (normalized_changes, unsupported) = match diff_language_for_path(&pair.relative) {
+            Some(spec) => {
+                match spec.language {
+                    DiffLanguage::Rust => rust_pair_count += 1,
+                    DiffLanguage::TypeScript => typescript_pair_count += 1,
+                    DiffLanguage::JavaScript => javascript_pair_count += 1,
+                }
+                ((spec.changed_node_count)(&left_bytes, &right_bytes)?, false)
+            }
+            None => {
+                unsupported_file_fallback_count += 1;
+                (0, true)
+            }
         };
 
         line_diff_changed_lines += line_changes;
@@ -1137,12 +1312,16 @@ fn normalized_rust_changed_node_count(left: &[u8], right: &[u8]) -> usize {
         .count()
 }
 
-fn is_typescript_path(path: &str) -> bool {
-    path.ends_with(".ts") || path.ends_with(".tsx")
+fn normalized_rust_changed_node_count_result(left: &[u8], right: &[u8]) -> Result<usize, String> {
+    Ok(normalized_rust_changed_node_count(left, right))
 }
 
-fn is_javascript_path(path: &str) -> bool {
-    path.ends_with(".js") || path.ends_with(".jsx")
+fn diff_language_for_path(path: &str) -> Option<&'static DiffLanguageSpec> {
+    DIFF_LANGUAGE_REGISTRY.iter().find(|spec| {
+        spec.extensions
+            .iter()
+            .any(|extension| path.ends_with(extension))
+    })
 }
 
 fn normalized_typescript_changed_node_count(left: &[u8], right: &[u8]) -> Result<usize, String> {
@@ -1987,6 +2166,47 @@ mod tests {
     }
 
     #[test]
+    fn ingest_honors_gitignore_and_default_local_directory_skips() {
+        let test_dir = TestDir::new("ignore-ingest");
+        let repo = test_dir.path.join("repo");
+        init_store(&repo).expect("store should initialize");
+        write_fixture_file(
+            &repo,
+            ".gitignore",
+            "ignored.txt\nlogs/\n*.tmp\n!important.tmp\n",
+        );
+        write_fixture_file(&repo, "src/lib.rs", "pub fn kept() -> bool { true }\n");
+        write_fixture_file(&repo, "ignored.txt", "ignore me\n");
+        write_fixture_file(&repo, "notes.tmp", "ignore tmp\n");
+        write_fixture_file(&repo, "important.tmp", "keep tmp\n");
+        write_fixture_file(&repo, "logs/app.log", "ignore log\n");
+        write_fixture_file(&repo, ".git/config", "ignore git metadata\n");
+        write_fixture_file(&repo, "node_modules/pkg/index.js", "ignore dependency\n");
+        write_fixture_file(&repo, "target/debug/output.txt", "ignore build output\n");
+        write_fixture_file(&repo, "dist/app.js", "ignore dist output\n");
+
+        let report = ingest_working_tree(&repo).expect("ingest should succeed");
+        let manifest_text = fs::read_to_string(&report.manifest).unwrap();
+        let manifest = Manifest::from_text(&manifest_text).unwrap();
+        let paths: HashSet<&str> = manifest
+            .entries
+            .iter()
+            .map(|entry| entry.path.as_str())
+            .collect();
+
+        assert!(paths.contains(".gitignore"));
+        assert!(paths.contains("src/lib.rs"));
+        assert!(paths.contains("important.tmp"));
+        assert!(!paths.contains("ignored.txt"));
+        assert!(!paths.contains("notes.tmp"));
+        assert!(!paths.contains("logs/app.log"));
+        assert!(!paths.contains(".git/config"));
+        assert!(!paths.contains("node_modules/pkg/index.js"));
+        assert!(!paths.contains("target/debug/output.txt"));
+        assert!(!paths.contains("dist/app.js"));
+    }
+
+    #[test]
     fn ingest_then_project_recreates_supported_text_files() {
         let test_dir = TestDir::new("round-trip");
         let repo = test_dir.path.join("repo");
@@ -2052,6 +2272,23 @@ mod tests {
         assert!(report
             .to_text()
             .contains("semantic_equivalence_claimed: no"));
+    }
+
+    #[test]
+    fn diff_language_registry_detects_supported_extensions() {
+        assert_eq!(
+            diff_language_for_path("src/lib.rs").map(|spec| spec.language),
+            Some(DiffLanguage::Rust)
+        );
+        assert_eq!(
+            diff_language_for_path("src/component.tsx").map(|spec| spec.language),
+            Some(DiffLanguage::TypeScript)
+        );
+        assert_eq!(
+            diff_language_for_path("src/widget.jsx").map(|spec| spec.language),
+            Some(DiffLanguage::JavaScript)
+        );
+        assert!(diff_language_for_path("README.md").is_none());
     }
 
     #[test]
