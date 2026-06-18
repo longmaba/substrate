@@ -33,6 +33,7 @@ tests or validation evidence exist.
 | US-011 | Packaged binary releases and repo-local installers make Substrate installable without Cargo on supported platforms. | yes | yes | no | yes | implemented | `docs/stories/US-011-substrate-release-automation/`; cargo fmt --check; cargo test; cargo build; release packaging script; local installer smoke; harness-cli story verify-all |
 | US-012 | Python and C# tree-sitter diff parsers add parser-backed changed-node counts for `.py` and `.cs` files. | yes | yes | no | yes | implemented | `docs/stories/US-012-python-csharp-tree-sitter-diff-parsers.md`; cargo fmt --check; cargo test; cargo build; Python and C# fixture diff commands; harness-cli story verify-all |
 | US-013 | Live release verification proves the published GitHub Release asset and checksum contract. | yes | yes | no | yes | implemented | `docs/stories/US-013-live-release-verification.md`; `scripts/verify-substrate-github-release.ps1`; `harness-cli story verify US-013`; `harness-cli story verify-all` |
+| US-014 | Compressed chunk storage gap reports an experimental sorted-chunk delta estimate and labels packed Git comparisons separately from raw chunks. | yes | yes | no | yes | implemented | `docs/stories/US-014-compressed-chunk-storage-gap.md`; cargo fmt --check; cargo test; cargo run --quiet -- bench fixtures\storage-agent-churn; cargo run --quiet -- bench bench-medium\fixture |
 
 ## Evidence Rules
 

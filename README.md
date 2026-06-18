@@ -177,15 +177,21 @@ Current local fixture result:
 | Files across revisions | 50 |
 | Whole-file baseline bytes | 117,950 |
 | Substrate stored bytes | 10,094 |
+| Experimental delta stored bytes | 6,566 |
 | Bytes avoided | 107,856 |
 | Storage reduction | 91.4% |
 | Dedup ratio | 11.6852x |
+| Experimental delta dedup ratio | 17.9638x |
 | Local ingest time | 9 ms |
 
 As a rough token-equivalent estimate using 4 bytes per token, this fixture is
 about 29,488 token-equivalent bytes as whole files versus 2,524 token-equivalent
 bytes in the Substrate store, or about 26,964 token-equivalent bytes avoided.
 This is an estimate from bytes, not a tokenizer or model-billing measurement.
+
+The delta number is an experimental sorted unique chunk prefix/suffix estimate.
+It is reported separately from raw Phase 0 chunks and is not a zlib or Git pack
+equivalence claim.
 
 More detail lives in `docs/benchmarks/phase-0-results.md`.
 

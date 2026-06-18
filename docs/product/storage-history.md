@@ -21,6 +21,19 @@ The storage layer should eventually support:
 - Fetch by symbol, dependency set, or query result where possible.
 - Text projection for compatibility surfaces.
 
+## Benchmark Claim Boundaries
+
+Phase 0 benchmark reports distinguish raw unique chunk storage from experimental
+delta estimates. Raw chunks are the implemented local store behavior today. The
+sorted unique chunk prefix/suffix delta number is benchmark evidence for a
+future storage mode, not a selected production format.
+
+Packed Git comparisons must be labeled separately from active-work Git loose
+comparisons. Git packed storage applies delta compression and zlib after an
+explicit maintenance step; raw Phase 0 Substrate chunks do not. Do not claim raw
+Substrate chunks beat packed Git unless a current benchmark proves that exact
+comparison.
+
 ## History Expectations
 
 The history model should eventually support:

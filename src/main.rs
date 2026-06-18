@@ -1560,9 +1560,11 @@ struct StorageBenchmarkReport {
     file_count: usize,
     whole_file_baseline_bytes: u64,
     substrate_stored_bytes: u64,
+    substrate_delta_stored_bytes: u64,
     chunk_count: usize,
     unique_chunk_count: usize,
     dedup_ratio: f64,
+    delta_dedup_ratio: f64,
     ingest_time_ms: u128,
 }
 
@@ -1611,6 +1613,12 @@ fn run_storage_benchmark(fixture_path: &Path) -> Result<StorageBenchmarkReport, 
     } else {
         whole_file_baseline_bytes as f64 / substrate_stored_bytes as f64
     };
+    let substrate_delta_stored_bytes = delta_encoded_unique_chunk_bytes(&unique_chunks);
+    let delta_dedup_ratio = if substrate_delta_stored_bytes == 0 {
+        0.0
+    } else {
+        whole_file_baseline_bytes as f64 / substrate_delta_stored_bytes as f64
+    };
 
     Ok(StorageBenchmarkReport {
         fixture,
@@ -1618,11 +1626,60 @@ fn run_storage_benchmark(fixture_path: &Path) -> Result<StorageBenchmarkReport, 
         file_count,
         whole_file_baseline_bytes,
         substrate_stored_bytes,
+        substrate_delta_stored_bytes,
         chunk_count,
         unique_chunk_count: unique_chunks.len(),
         dedup_ratio,
+        delta_dedup_ratio,
         ingest_time_ms: started.elapsed().as_millis(),
     })
+}
+
+fn delta_encoded_unique_chunk_bytes(unique_chunks: &HashSet<Vec<u8>>) -> u64 {
+    let mut chunks: Vec<&Vec<u8>> = unique_chunks.iter().collect();
+    chunks.sort();
+
+    let mut stored = 0u64;
+    let mut previous: Option<&[u8]> = None;
+    for chunk in chunks {
+        let raw_cost = raw_chunk_record_bytes(chunk);
+        let cost = if let Some(previous) = previous {
+            raw_cost.min(delta_chunk_record_bytes(previous, chunk))
+        } else {
+            raw_cost
+        };
+        stored += cost as u64;
+        previous = Some(chunk);
+    }
+    stored
+}
+
+fn raw_chunk_record_bytes(chunk: &[u8]) -> usize {
+    chunk.len()
+}
+
+fn delta_chunk_record_bytes(previous: &[u8], current: &[u8]) -> usize {
+    let prefix = common_prefix_len(previous, current);
+    let suffix = common_suffix_len_after_prefix(previous, current, prefix);
+    let middle_len = current.len().saturating_sub(prefix + suffix);
+    middle_len
+}
+
+fn common_prefix_len(left: &[u8], right: &[u8]) -> usize {
+    left.iter()
+        .zip(right.iter())
+        .take_while(|(left, right)| left == right)
+        .count()
+}
+
+fn common_suffix_len_after_prefix(left: &[u8], right: &[u8], prefix_len: usize) -> usize {
+    let max_suffix = left.len().min(right.len()).saturating_sub(prefix_len);
+    left.iter()
+        .rev()
+        .zip(right.iter().rev())
+        .take(max_suffix)
+        .take_while(|(left, right)| left == right)
+        .count()
 }
 
 fn collect_revision_dirs(fixture: &Path) -> Result<Vec<PathBuf>, String> {
@@ -1671,7 +1728,7 @@ fn collect_files_into(root: &Path, files: &mut Vec<PathBuf>) -> Result<(), Strin
 
 impl StorageBenchmarkReport {
     fn to_text(&self) -> String {
-        format!(
+        let mut output = format!(
             "fixture: {}\nrevision_count: {}\nfile_count: {}\nwhole_file_baseline_bytes: {}\nsubstrate_stored_bytes: {}\nchunk_size_bytes: {}\nchunk_count: {}\nunique_chunk_count: {}\ndedup_ratio: {:.4}\ningest_time_ms: {}\n",
             self.fixture.display(),
             self.revision_count,
@@ -1683,7 +1740,15 @@ impl StorageBenchmarkReport {
             self.unique_chunk_count,
             self.dedup_ratio,
             self.ingest_time_ms
-        )
+        );
+        output.push_str("substrate_delta_stored_bytes: ");
+        output.push_str(&self.substrate_delta_stored_bytes.to_string());
+        output.push('\n');
+        output.push_str("delta_dedup_ratio: ");
+        output.push_str(&format!("{:.4}", self.delta_dedup_ratio));
+        output.push('\n');
+        output.push_str("delta_encoding: sorted-unique-chunk-prefix-suffix-experiment\n");
+        output
     }
 }
 
@@ -2111,13 +2176,43 @@ mod tests {
         assert_eq!(report.file_count, 2);
         assert!(report.whole_file_baseline_bytes > 0);
         assert!(report.substrate_stored_bytes > 0);
+        assert!(report.substrate_delta_stored_bytes > 0);
+        assert!(report.substrate_delta_stored_bytes <= report.substrate_stored_bytes);
         assert!(report.chunk_count >= report.unique_chunk_count);
         assert!(output.contains("whole_file_baseline_bytes:"));
         assert!(output.contains("substrate_stored_bytes:"));
+        assert!(output.contains("substrate_delta_stored_bytes:"));
         assert!(output.contains("chunk_count:"));
         assert!(output.contains("unique_chunk_count:"));
         assert!(output.contains("dedup_ratio:"));
+        assert!(output.contains("delta_dedup_ratio:"));
+        assert!(output.contains("delta_encoding: sorted-unique-chunk-prefix-suffix-experiment"));
         assert!(output.contains("ingest_time_ms:"));
+    }
+
+    #[test]
+    fn delta_storage_estimate_counts_only_changed_middle_bytes() {
+        assert_eq!(common_prefix_len(b"abc-old-tail", b"abc-new-tail"), 4);
+        assert_eq!(
+            common_suffix_len_after_prefix(b"abc-old-tail", b"abc-new-tail", 4),
+            5
+        );
+        assert_eq!(
+            delta_chunk_record_bytes(b"abc-old-tail", b"abc-new-tail"),
+            3
+        );
+
+        let chunks: HashSet<Vec<u8>> = [
+            b"handler stable body rev 001".to_vec(),
+            b"handler stable body rev 002".to_vec(),
+            b"handler stable body rev 003".to_vec(),
+        ]
+        .into_iter()
+        .collect();
+        let raw_bytes: u64 = chunks.iter().map(|chunk| chunk.len() as u64).sum();
+        let delta_bytes = delta_encoded_unique_chunk_bytes(&chunks);
+
+        assert!(delta_bytes < raw_bytes);
     }
 
     #[test]
@@ -2130,6 +2225,7 @@ mod tests {
         assert_eq!(report.revision_count, 25);
         assert!(report.file_count >= 50);
         assert!(report.whole_file_baseline_bytes > report.substrate_stored_bytes);
+        assert!(report.substrate_delta_stored_bytes <= report.substrate_stored_bytes);
     }
 
     #[test]

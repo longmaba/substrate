@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -11,15 +11,15 @@ normal
 ## Product Contract
 
 Substrate Phase 0 proves raw chunk deduplication, but the medium benchmark shows
-that Git can still store less data after an aggressive pack step. The next
-storage story must evaluate whether compressed chunks, delta encoding, or a
-combined approach can close that gap without weakening Substrate's local,
-queryable, projection-safe store contract.
+that Git can still store less data after an aggressive pack step. The storage
+benchmark now reports an experimental sorted unique chunk prefix/suffix delta
+estimate so the gap can be measured without changing the raw Phase 0 store.
 
-This story does not claim Substrate currently beats packed Git. It turns the
-benchmark result into an explicit follow-up: Git packed storage is the current
-comparison target for post-maintenance byte efficiency, while Git loose storage
-remains the active-work comparison target.
+This story does not claim raw Substrate chunks beat packed Git. It records Git
+packed storage as the current post-maintenance byte-efficiency comparison target
+and Git loose storage as the active-work comparison target. The new delta metric
+is benchmark evidence for a possible future storage mode, not a production
+format.
 
 ## Relevant Product Docs
 
@@ -33,20 +33,22 @@ remains the active-work comparison target.
   smaller than raw Substrate chunks after aggressive repack in the current
   synthetic agent-churn comparison.
 - At least one compression or delta-storage approach is prototyped or rejected
-  with measured evidence.
+  with measured evidence. Done: sorted unique chunk prefix/suffix delta estimate.
 - The benchmark report distinguishes active-work Git loose comparisons from
-  post-maintenance Git packed comparisons.
+  post-maintenance Git packed comparisons. Done in `docs/benchmarks/phase-0-results.md`.
 - Any selected storage change preserves deterministic projection of stored
-  states back to ordinary files.
+  states back to ordinary files. Done: no persisted store format or projection
+  behavior changed; the new output is benchmark-only.
 - Product docs state what Substrate does and does not claim against packed Git.
+  Done in `docs/product/storage-history.md` and benchmark claim guidance.
 
 ## Design Notes
 
-- Commands: likely extend `bench` or add a storage experiment command for
-  compressed chunk accounting.
+- Commands: extended `bench <fixture-path>` with `substrate_delta_stored_bytes`,
+  `delta_dedup_ratio`, and `delta_encoding` output.
 - Queries: no user-facing query command is required for the first pass.
-- API: CLI output may need additional fields for compressed or delta storage
-  metrics if the experiment graduates into product behavior.
+- API: CLI output has additional experimental fields; raw `substrate_stored_bytes`
+  remains unchanged.
 - Tables: no Harness schema change is expected.
 - Domain rules: raw, compressed, and delta-derived storage metrics must remain
   labeled separately so benchmarks are not apples-to-oranges.
@@ -67,8 +69,8 @@ When updating durable proof status, use numeric booleans:
 
 ## Harness Delta
 
-Adds a planned normal-lane story for the benchmark action item discovered while
-reviewing the medium storage comparison.
+Adds benchmark fields and documentation for the packed-Git comparison gap while
+keeping raw Phase 0 chunk storage distinct from the experimental delta estimate.
 
 ## Evidence
 
@@ -80,3 +82,15 @@ Initial action item from the medium benchmark report:
   benchmark.
 - Substrate Phase 0 applies neither zlib compression nor delta encoding to its
   unique chunk store.
+
+Implementation evidence:
+
+- `cargo run --quiet -- bench fixtures\storage-agent-churn` reported raw
+  Substrate chunks at 10,094 bytes and experimental delta at 6,566 bytes.
+- `cargo run --quiet -- bench bench-medium\fixture` reported raw Substrate
+  chunks at 36,818 bytes and experimental delta at 23,845 bytes.
+- The medium fixture comparison records Git loose at 88,124 bytes and Git packed
+  at 28,866 bytes, so raw chunks still do not beat packed Git while the delta
+  experiment does on this fixture.
+- `cargo fmt --check` passed.
+- `cargo test` passed with 30 tests.

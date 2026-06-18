@@ -27,7 +27,7 @@ fixture shape; it does not claim a required storage reduction target.
 - A committed deterministic fixture contains at least 25 synthetic revisions.
 - Each revision contains a small source tree with repeated boilerplate and generated-looking text files.
 - Each revision changes only a small section of one or more large text files while most content remains unchanged.
-- `substrate bench <fixture-path>` reports whole-file baseline bytes, Substrate stored bytes, chunk count, unique chunk count, dedup ratio, and ingest time.
+- `substrate bench <fixture-path>` reports whole-file baseline bytes, raw Substrate stored bytes, experimental delta stored bytes, chunk count, unique chunk count, dedup ratios, and ingest time.
 - The report is deterministic except for elapsed time.
 - The benchmark stays local-only and does not add network access, global deduplication, hosted service behavior, or Git protocol emulation.
 
@@ -37,7 +37,7 @@ fixture shape; it does not claim a required storage reduction target.
 - Queries: the command reads revision directories from the fixture path and prints aggregate metrics.
 - API: no library API is committed by this story.
 - Tables: none.
-- Domain rules: revisions are sorted by directory name; whole-file baseline counts every file in every revision; Substrate stored bytes count unique fixed-size chunks across all revision files.
+- Domain rules: revisions are sorted by directory name; whole-file baseline counts every file in every revision; raw Substrate stored bytes count unique fixed-size chunks across all revision files. Experimental delta bytes estimate sorted unique chunk prefix/suffix payload reuse and do not replace the raw metric.
 - UI surfaces: terminal report only.
 
 ## Validation
@@ -70,9 +70,12 @@ When updating durable proof status, use numeric booleans:
   - `file_count: 50`
   - `whole_file_baseline_bytes: 117950`
   - `substrate_stored_bytes: 10094`
+  - `substrate_delta_stored_bytes: 6566`
   - `chunk_size_bytes: 128`
   - `chunk_count: 950`
   - `unique_chunk_count: 80`
   - `dedup_ratio: 11.6852`
+  - `delta_dedup_ratio: 17.9638`
+  - `delta_encoding: sorted-unique-chunk-prefix-suffix-experiment`
   - `ingest_time_ms: 8` on this run
 - `cargo run --quiet -- bench` exited non-zero and reported `bench requires <fixture-path>`.

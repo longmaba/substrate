@@ -31,4 +31,4 @@ the work is selected or when a product decision needs a durable place to land.
 | US-009 | User onboarding, agent skill, and benchmarks | implemented |
 | US-010 | Ignore-aware ingest and parser registry | implemented |
 | US-012 | Python and C# tree-sitter diff parsers | implemented |
-| US-014 | Compressed chunk storage gap | planned |
+| US-014 | Compressed chunk storage gap | implemented |
